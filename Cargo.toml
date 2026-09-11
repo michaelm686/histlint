@@ -1,0 +1,10 @@
+[package]
+name = "histlint"
+version = "0.1.0"
+edition = "2021"
+description = "A linter for shell history files"
+license = "MIT"
+
+[[bin]]
+name = "histlint"
+path = "src/main.rs"
