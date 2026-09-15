@@ -46,7 +46,7 @@ pub fn parse(input: &str) -> Vec<Entry> {
 
         current = Some(Entry {
             line: line_no,
-            command: raw_line.to_string(),
+            command: strip_history_number(raw_line).to_string(),
         });
     }
 
@@ -55,6 +55,25 @@ pub fn parse(input: &str) -> Vec<Entry> {
     }
 
     entries
+}
+
+// The `history` builtin prints each entry as "  501  the command", so a
+// file piped straight from `history` (rather than read from a history file
+// on disk) needs that counter stripped before the rest of the rules see it.
+// Real history files don't produce this shape, so applying it unconditionally
+// is safe: it only ever matches a leading run of digits followed by a space.
+fn strip_history_number(line: &str) -> &str {
+    let trimmed = line.trim_start();
+    let digit_end = trimmed
+        .find(|c: char| !c.is_ascii_digit())
+        .unwrap_or(trimmed.len());
+    if digit_end == 0 {
+        return line;
+    }
+    match trimmed[digit_end..].strip_prefix(' ') {
+        Some(rest) => rest.trim_start_matches(' '),
+        None => line,
+    }
 }
 
 #[cfg(test)]
@@ -86,5 +105,21 @@ mod tests {
         let entries = parse(input);
         assert_eq!(entries.len(), 1);
         assert_eq!(entries[0].command, "echo one \ntwo");
+    }
+
+    #[test]
+    fn strips_history_builtin_numbering() {
+        let input = "  501  git status\n  502  cargo build\n";
+        let entries = parse(input);
+        assert_eq!(entries.len(), 2);
+        assert_eq!(entries[0].command, "git status");
+        assert_eq!(entries[1].command, "cargo build");
+    }
+
+    #[test]
+    fn leaves_numberless_lines_alone() {
+        let input = "2to3 script.py\n";
+        let entries = parse(input);
+        assert_eq!(entries[0].command, "2to3 script.py");
     }
 }

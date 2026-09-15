@@ -1,5 +1,6 @@
 use std::env;
 use std::fs;
+use std::io::{self, Read};
 use std::process::ExitCode;
 
 mod history;
@@ -28,20 +29,24 @@ fn main() -> ExitCode {
         }
     }
 
-    let path = match path {
-        Some(p) => p,
-        None => {
-            print_usage();
-            return ExitCode::FAILURE;
+    let contents = match path.as_deref() {
+        None | Some("-") => {
+            let mut buf = String::new();
+            match io::stdin().read_to_string(&mut buf) {
+                Ok(_) => buf,
+                Err(e) => {
+                    eprintln!("histlint: could not read stdin: {}", e);
+                    return ExitCode::FAILURE;
+                }
+            }
         }
-    };
-
-    let contents = match fs::read_to_string(&path) {
-        Ok(c) => c,
-        Err(e) => {
-            eprintln!("histlint: could not read {}: {}", path, e);
-            return ExitCode::FAILURE;
-        }
+        Some(p) => match fs::read_to_string(p) {
+            Ok(c) => c,
+            Err(e) => {
+                eprintln!("histlint: could not read {}: {}", p, e);
+                return ExitCode::FAILURE;
+            }
+        },
     };
 
     let entries = history::parse(&contents);
@@ -61,9 +66,12 @@ fn main() -> ExitCode {
 }
 
 fn print_usage() {
-    eprintln!("usage: histlint [--json] <history-file>");
+    eprintln!("usage: histlint [--json] [history-file | -]");
+    eprintln!();
+    eprintln!("with no file, or with `-`, reads from stdin");
     eprintln!();
     eprintln!("examples:");
     eprintln!("  histlint ~/.bash_history");
     eprintln!("  histlint --json ~/.zsh_history");
+    eprintln!("  history | histlint");
 }

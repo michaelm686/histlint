@@ -42,6 +42,19 @@ Sample output:
 Exit status is `0` when there are no findings and `1` otherwise, so it's
 usable in a pre-commit hook or CI step over an exported history file.
 
+### Reading from stdin
+
+With no file argument, or with `-` in its place, histlint reads from stdin.
+That makes it possible to lint your live session history without writing it
+to disk first:
+
+```
+history | histlint
+```
+
+The `history` builtin prefixes each line with its entry number (`  501  git
+status`); histlint strips that off before running the rules against it.
+
 ### JSON output
 
 `--json` prints the same findings as a single JSON array, one object per
