@@ -81,6 +81,29 @@ can be a continuation of several physical lines.
 - `eval-remote` — `eval` combined with a network fetch.
 - `destructive-rm` — recursive `rm` targeting `/`, `~`, `$HOME`, or `*`.
 
+## Config
+
+Some rules don't fit every project's history (a warning about `-p` passwords
+is noise if your team only ever uses `.pgpass`). Drop a `.histlintrc` in the
+directory you run histlint from to turn rules off:
+
+```
+# .histlintrc
+disable = pipe-to-shell
+disable = eval-remote, destructive-rm
+```
+
+Lines starting with `#` are comments, blank lines are ignored, and a rule
+name that doesn't exist is a load error rather than a silent no-op. Pass
+`--config <path>` to load a config from somewhere other than the current
+directory:
+
+```
+histlint --config ci/histlintrc ~/.bash_history
+```
+
+With no `.histlintrc` present and no `--config`, all rules run.
+
 ## History formats
 
 Plain one-command-per-line files (bash's default) and zsh's extended
